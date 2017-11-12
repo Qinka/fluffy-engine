@@ -1,1 +1,0 @@
-qinka@mbp.qinka.pro.42401

@@ -11,7 +11,6 @@ CREATE TABLE table_true_or_false
 , key_body TEXT NOT NULL
 , key_answer    BOOL NOT NULL
 , key_rationale TEXT NULL
-, key_points    INT  NOT NULL DEFAULT 1
 , key_difficulty TEXT NULL
 , key_references Int NULL
 , key_learning_objectives TEXT NULL
@@ -28,7 +27,6 @@ CREATE TABLE table_gap_filling
 ( key_id SERIAL PRIMARY KEY 
 , key_body TEXT NOT NULL
 , key_answer TEXT NOT NULL
-, key_points    INT  NOT NULL DEFAULT 1
 , key_difficulty TEXT NULL
 , key_references Int NULL
 , key_learning_objectives TEXT NULL
