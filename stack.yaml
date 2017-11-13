@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: nightly-2017-10-11
+resolver: nightly-2017-11-13
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -37,9 +37,11 @@ resolver: nightly-2017-10-11
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - fluffy
+- fluffy-parser
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: []
+extra-deps:
+#- pandoc-2.0.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}
