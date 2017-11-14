@@ -19,7 +19,7 @@ import Database.PostgreSQL.Simple.SqlQQ
 import Database.PostgreSQL.Simple.ToField (ToField(..),Action(Many))
 import qualified  Database.PostgreSQL.Simple.ToField as PG
 import Database.PostgreSQL.Simple.Types(PGArray(..))
-
+import Data.List
 import Data.Binary.Builder(putCharUtf8)
 
 
@@ -97,6 +97,15 @@ data MultipleChoice = MultipleChoice
                     , mcChoices :: [String]
                     }
                     deriving (Show,Eq)
+
+instance ToField MultipleChoice where
+  toField MultipleChoice{..} = Many
+    [ toField mcBody
+    , PG.Plain (putCharUtf8 ',')
+    , toField mcAnswer
+    , PG.Plain (putCharUtf8 ',')
+    , toField $ PGArray mcChoices
+    ]
 
 replace160 :: String -> String
 replace160 = map (\x -> if x == '\160' then ' ' else x)
@@ -296,4 +305,77 @@ updateGFs conn gfs = do
                       VALUES (?)
                       |]
     gfs
+  return ()
+
+
+
+data MultipleChoiceContext
+  = MCCQuestHead String Int
+  | MCCQuestRest String
+  | MCCQuestItem Int String
+  | MCCNull
+
+parserMCQuestHead :: Stream s m Char => ParsecT s u m MultipleChoiceContext
+parserMCQuestHead = do
+  string "Question"
+  spaces
+  _ <- many1 digit
+  spaces
+  char ':'
+  str <- many1 (noneOf "?")
+  char '?'
+  spaces
+  ans <- (\x -> x - ord 'A') . ord <$> oneOf ['A'..'Z']
+  return $ MCCQuestHead str ans
+  
+parserMCQuestRest :: Stream s m Char => ParsecT s u m MultipleChoiceContext
+parserMCQuestRest = MCCQuestRest <$> many1 anyChar
+
+parserMCQuestItem :: Stream s m Char => ParsecT s u m MultipleChoiceContext
+parserMCQuestItem = do
+  item <- (\x -> x - ord 'A') . ord <$> oneOf ['A'..'Z']
+  char ':'
+  spaces
+  str <- many1 anyChar
+  return $ MCCQuestItem item str
+  
+parserMC :: Stream s m Char => ParsecT s u m MultipleChoiceContext
+parserMC = try parserMCQuestHead <|> try parserMCQuestItem <|> parserMCQuestRest
+
+parseMCfBlock :: Block -> MultipleChoiceContext
+parseMCfBlock (Para il) =
+  let body = renderText il
+      rt   = parse parserMC "function parseMCBlock" $ replace160 body
+  in case rt of
+    Right i -> i
+    Left _ -> MCCNull
+    
+data MultipleChoiceProb = MultipleChoiceProb
+                        { mcbBody :: String
+                        , mcbAns  :: Int
+                        , mcbChos :: [(Int,String)]
+                        }
+                        deriving (Show,Eq)
+
+toMCPfMCC :: [MultipleChoiceContext] -> [MultipleChoiceProb] -> [MultipleChoiceProb]
+toMCPfMCC [] it = it
+toMCPfMCC (MCCQuestHead b a:mccs) mcps =
+  toMCPfMCC mccs $ MultipleChoiceProb b a [] : mcps
+toMCPfMCC (MCCQuestRest b:mccs) (MultipleChoiceProb b' a cs:mcps) =
+  toMCPfMCC mccs $ MultipleChoiceProb (b++" "++b') a cs:mcps
+toMCPfMCC (MCCQuestItem i c:mccs) (MultipleChoiceProb b a cs:mcps) =
+  toMCPfMCC mccs $ MultipleChoiceProb b a ((i,c):cs):mcps
+toMCPfMCC (_:mccs) mcps = toMCPfMCC mccs mcps
+
+toMCfMCP :: MultipleChoiceProb -> MultipleChoice
+toMCfMCP (MultipleChoiceProb b a cs) = MultipleChoice b a $ map snd $ sort cs
+
+updateMC :: PG.Connection -> [MultipleChoice] -> IO ()
+updateMC conn mcs = do
+  PG.execute conn [sql|
+                      INSERT INTO table_multiple_choice(
+                        key_body, key_answer, key_choices)
+                      VALUES (?)
+                      |]
+    mcs
   return ()
