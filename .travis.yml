@@ -1,0 +1,33 @@
+# The config of Travis
+
+#to use ubuntu 14.04
+sudo: required
+dist: trusty
+
+
+matrix:
+  include:
+    - env: GHC_VER=8.2.1 THREADED=t IS_DOCKER=docker
+      addons:
+        apt:
+          sources:
+            - hvr-ghc
+          packages:
+            - ghc-8.2.1
+            - redis-server
+            - wget
+            - curl
+
+
+# pre-install
+before_install:
+  - source $TRAVIS_BUILD_DIR/integration/ci.sh/init.sh
+
+# build
+script:
+  - source $TRAVIS_BUILD_DIR/integration/ci.sh/test.sh
+  - source $TRAVIS_BUILD_DIR/integration/ci.sh/build.sh
+
+# update docker image
+after_success:
+  - source $TRAVIS_BUILD_DIR/integration/ci.sh/succ.sh
