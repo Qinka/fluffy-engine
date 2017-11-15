@@ -37,5 +37,4 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
   else
     echo skip building docker image
   fi
-
 fi
