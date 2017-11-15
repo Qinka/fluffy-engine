@@ -30,7 +30,7 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
     sudo cp $HOME/.local/bin/fluffy  docker.tmp/bin
     sudo cp $TRAVIS_BUILD_DIR/integration/dockerfiles/fluffy.dockerfile   docker.tmp
     cd docker.tmp
-    docker build -t qinka/fluffy:$FLUFFY-$GIT_TAG   -f pb-auth.dockerfile              . || true
+    docker build -t qinka/fluffy:$FLUFFY-$GIT_TAG   -f fluffy.dockerfile              . || true
     docker tag      qinka/fluffy:$FLUFFY-$GIT_TAG   qinka/fluffy:$FLUFFY-$LATEST    || true
     echo push docker images
     docker push qinka/fluffy || true
