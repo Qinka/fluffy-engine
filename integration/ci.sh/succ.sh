@@ -1,5 +1,5 @@
 #!/bin/bash
-# stop when error
+echo stop when error
 set -e
 
 echo skip pull request
