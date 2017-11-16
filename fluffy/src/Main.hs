@@ -119,14 +119,26 @@ instance Yesod Fluffy
 
 -- home page
 getHomeR :: Handler Html
-getHomeR = defaultLayout
-  [whamlet|
-          <h1> Fluffy Engine
-          <p> Hi
-          <p> <a href=@{TrueOrFalseR 0}> Go to True or False
-          <p> <a href=@{GapFillingR 0}> Go to Gap Filling
-          <p> <a href=@{MultipleChoiceR 0}> Go to Multiple Choice
-  |]
+getHomeR = do
+  goal  <- fromMaybe 0 . fmap (read . T.unpack) <$> lookupSession "goal"
+  total <- fromMaybe 0 . fmap (read . T.unpack) <$> lookupSession "total"
+  defaultLayout $ do
+    pageAbove Nothing Nothing goal total
+    [whamlet|
+            <div class=fehead>
+              <h1> Fluffy Engine
+              <p> Hi
+            <div class=tofl>
+              <a href=@{TrueOrFalseR 0}> Go to True or False
+            <div class=gfl>
+              <a href=@{GapFillingR 0}> Go to Gap Filling
+            <div class=mcl>
+              <a href=@{MultipleChoiceR 0}> Go to Multiple Choice
+           |]
+
+data TOFRes = TOFProb
+            | TOFForm Bool
+            deriving (Show,Eq)
 
 getTrueOrFalseR :: Int -> Handler Html
 getTrueOrFalseR i = do
@@ -151,55 +163,76 @@ getTrueOrFalseR i = do
         let rt = (x == "t") == tofAnswer
             goal  = goal'  + (if rt then 1 else 0)
             total = total' + 1
-        setSession "goal" $ T.pack $ show $ goal
-        setSession "total" $ T.pack $ show $ total
-        return (goal, total,
-          [whamlet|
+        return (goal, total, TOFForm rt)
+      Nothing -> return (goal', total', TOFProb)
+  let last = if i > 0 then TrueOrFalseR (i-1) else HomeR
+      next = TrueOrFalseR (i+1)
+  setSession "goal" $ T.pack $ show $ goal
+  setSession "total" $ T.pack $ show $ total
+  defaultLayout $ do
+    pageAbove (Just last) (Just next) goal total
+    [whamlet|
+            <div class=tofhead>
+              <h3> True or False
+            <div class=tofpb>
+              <h2> Problem
+              <p> #{tofBody}
+            |]
+    case con of
+      TOFProb ->
+        [whamlet|
+                <div class=tofform>
+                  <form>
+                    <div class=toftrue>
+                      <input type=radio name=answer value=t checked> True
+                    <div class=toffalse>
+                      <input type=radio name=answer value=f>         False
+                    <div class=tofcheck>
+                      <input type=submit value=Check>
+                |]
+      TOFForm rt ->
+        [whamlet|
+                <div class=tofans>
                   <h3> Answer #{show rt}
                   <p> #{show tofAnswer}
-                  $maybe ra <- tofRationale
-                    <h3> Reationale
+                $maybe ra <- tofRationale
+                  <div class=tofrationale>
+                    <h3> Rationale
                     <p> #{ra}
-                  $maybe d <- tofDifficulty
+                $maybe d <- tofDifficulty
+                  <div class=tofdifficulty>
                     <h3> Difficluty
                     <p> #{d}
-                  $maybe r <- tofReference
+                $maybe r <- tofReference
+                  <div class=tofref>
                     <h3> Reference
                     <p> p.#{show r}
-                  $maybe l <- tofLearningObjectives
+                $maybe l <- tofLearningObjectives
+                  <div class=toflo>
                     <h3> Learning Objectives
                     <p> #{l}
-                  $maybe n <- tofNationalStandards
+                $maybe n <- tofNationalStandards
+                  <div class=tofns>
                     <h3> National Standards
                     <p> #{n}
-                  $if not (null tofKeyWords)
+                $if not (null tofKeyWords)
+                  <div class=tofkw>
                     <h3> Key Words
                     <ul>
                     $forall kw <- tofKeyWords
-                     <li> #{kw}
-                  $if not (null tofTopics)
+                      <li> #{kw}
+                $if not (null tofTopics)
+                  <div class=toftopic>
                     <h3> Topics
                     <ul>
                     $forall t <- tofTopics
-                     <li> #{t}
-                |])
-      Nothing -> return (goal', total',
-        [whamlet|
-                <form>
-                  <input type=radio name=answer value=t checked> True
-                  <input type=radio name=answer value=f>         False
-                  <input type=submit value=Check>
-                |])
-  defaultLayout $ do
-    [whamlet|
-            <h3> Goal / Total
-            <p> #{show goal} / #{show total}
-            <h1> True or False
-            <h2> Problem #{show i}
-            <h2> #{tofBody}
-            |]
-    con
+                      <li> #{t}
+               |]
 
+
+data GFRes = GFProb
+           | GFForm Bool
+           deriving (Show,Eq)
 
 getGapFillingR :: Int -> Handler Html
 getGapFillingR i = do
@@ -225,51 +258,69 @@ getGapFillingR i = do
             rt = x == gfAnswer
             goal  = goal'  + (if rt then 1 else 0)
             total = total' + 1
-        setSession "goal" $ T.pack $ show $ goal
-        setSession "total" $ T.pack $ show $ total
-        return (goal, total,
-          [whamlet|
+        return (goal, total,GFForm rt)
+      Nothing -> return (goal', total', GFProb)
+  let last = if i > 0 then GapFillingR (i-1) else HomeR
+      next = GapFillingR (i+1)
+  setSession "goal" $ T.pack $ show $ goal
+  setSession "total" $ T.pack $ show $ total
+  defaultLayout $ do
+    pageAbove (Just last) (Just next) goal total
+    [whamlet|
+            <div class=gfhead>
+              <h3> Gap Filling
+            <div class=gfpb>
+              <h2> Problem
+              <p> #{gfBody}
+            |]
+    case con of
+      GFProb ->
+        [whamlet|
+                <div class=gfform>
+                  <form>
+                    <div class=gfinput>
+                      <input type=text name=answer>
+                    <div class=gfcheck>
+                      <input type=submit value=Check>
+                |]
+      GFForm rt ->
+        [whamlet|
+                <div class=gfans>
                   <h3> Answer #{show rt}
                   <p> #{show gfAnswer}
-                  $maybe d <- gfDifficulty
+                $maybe d <- gfDifficulty
+                  <div class=gfdiff>
                     <h3> Difficluty
                     <p> #{d}
-                  $maybe r <- gfReference
+                $maybe r <- gfReference
+                  <div class=gfref>
                     <h3> Reference
                     <p> p.#{show r}
-                  $maybe l <- gfLearningObjectives
+                $maybe l <- gfLearningObjectives
+                  <div class=gflo>
                     <h3> Learning Objectives
                     <p> #{l}
-                  $maybe n <- gfNationalStandards
+                $maybe n <- gfNationalStandards
+                  <div class=gfns>
                     <h3> National Standards
                     <p> #{n}
-                  $if not (null gfKeyWords)
+                $if not (null gfKeyWords)
+                  <div class=gfkw>
                     <h3> Key Words
                     <ul>
                     $forall kw <- gfKeyWords
-                     <li> #{kw}
-                  $if not (null gfTopics)
+                      <li> #{kw}
+                $if not (null gfTopics)
+                  <div class=gftopic>
                     <h3> Topics
                     <ul>
                     $forall t <- gfTopics
-                     <li> #{t}
-                |])
-      Nothing -> return (goal', total',
-        [whamlet|
-                <form>
-                  <input type=text name=answer checked>
-                  <input type=submit value=Check>
-                |])
-  defaultLayout $ do
-    [whamlet|
-            <h3> Goal / Total
-            <p> #{show goal} / #{show total}
-            <h1> Gap Filling
-            <h2> Problem #{show i}
-            <h2> #{gfBody}
-            |]
-    con
+                      <li> #{t}
+                |]
 
+data MCRes = MCProb
+           | MCForm Bool
+           deriving (Show,Eq)
 
 getMultipleChoiceR :: Int -> Handler Html
 getMultipleChoiceR i =  do
@@ -296,33 +347,43 @@ getMultipleChoiceR i =  do
             rt = x == mcAnswer
             goal  = goal'  + (if rt then 1 else 0)
             total = total' + 1
-        setSession "goal" $ T.pack $ show $ goal
-        setSession "total" $ T.pack $ show $ total
-        return (goal, total,
-          [whamlet|
+        return (goal, total, MCForm rt)
+      Nothing -> return (goal', total', MCProb)
+  setSession "goal" $ T.pack $ show $ goal
+  setSession "total" $ T.pack $ show $ total
+  let last = if i > 0 then MultipleChoiceR (i-1) else HomeR
+      next = MultipleChoiceR (i+1)
+  defaultLayout $ do
+    pageAbove (Just last) (Just next) goal total
+    [whamlet|
+            <div class=mchead>
+              <h3> Multiple Choice
+            <div class=mcpb>
+              <h2> Problem
+              <p> #{mcBody}
+            |]
+    case con of
+      MCProb ->
+        [whamlet|
+                <div class=mcform>
+                  <form>
+                    <div class=mccs>
+                      $forall (l,c) <- mixAns mcChoices
+                        <p> <input type=radio name=answer value=#{toId l}> #{toAns l}: #{c}
+                    <div class=mcchecked>
+                      <input type=submit value=Check>
+                |]
+      MCForm rt -> 
+        [whamlet|
+                <div class=mcans>
                   <h3> Answer #{show rt}
                   <p> #{toAns mcAnswer}
+                <div class=mcchoices>
                   <h3> Choices
                   <ul>
                     $forall (l,c) <- mixAns mcChoices
                       <li> #{toAns l}: #{c}
-                |])
-      Nothing -> return (goal', total',
-        [whamlet|
-                <form>
-                  $forall (l,c) <- mixAns mcChoices
-                    <p> <input type=radio name=answer value=#{toId l}> #{toAns l}: #{c}
-                  <input type=submit value=Check>
-                |])
-  defaultLayout $ do
-    [whamlet|
-            <h3> Goal / Total
-            <p> #{show goal} / #{show total}
-            <h1> Multiple Choice
-            <h2> Problem #{show i}
-            <h2> #{mcBody}
-            |]
-    con
+                |]
 
 
 getCleanHistory :: Handler Html
@@ -344,3 +405,26 @@ main = do
     1000
     200
   warp port $ Fluffy pgPool
+
+
+pageAbove :: (a ~ Route Fluffy, b ~ Route Fluffy)
+          => Maybe a -- ^ last page
+          -> Maybe b -- ^ next page
+          -> Int     -- ^ goal
+          -> Int     -- ^ total
+          -> WidgetT Fluffy IO ()
+pageAbove l n g t=
+  [whamlet|
+          <div class=navbutton>
+            $maybe ll <- l
+              <div class=lastbutton>
+                <a href=@{ll}> Last
+            $maybe nn <- n
+              <div class=nextbutton>
+                <a href=@{nn}> Next
+            <div class=cleanbutton>
+              <a href=@{CleanHistory}> Clean History
+          <div class=gthead>
+            <h3> Goal / Total
+            <p> #{show g} / #{show t}
+          |]

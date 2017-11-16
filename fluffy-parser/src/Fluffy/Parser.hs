@@ -15,9 +15,10 @@ import Data.Char hiding (Space)
 import Data.Maybe
 
 import qualified Database.PostgreSQL.Simple as PG
+import Database.PostgreSQL.Simple(Only(..))
 import Database.PostgreSQL.Simple.SqlQQ
 import Database.PostgreSQL.Simple.ToField (ToField(..),Action(Many))
-import qualified  Database.PostgreSQL.Simple.ToField as PG
+import qualified Database.PostgreSQL.Simple.ToField as PG
 import Database.PostgreSQL.Simple.Types(PGArray(..))
 import Data.List
 import Data.Binary.Builder(putCharUtf8)
@@ -269,7 +270,7 @@ toGF :: Block -> GapFilling
 toGF (Table _ _ _ _ bs') =
   let bs = head $ head bs'
       body = bs !! 0
-      info = bs !! 2
+      info = bs !! 1
       defGF = GapFilling
               { gfBody = ""
               , gfAnswer = ""
@@ -283,8 +284,8 @@ toGF (Table _ _ _ _ bs') =
   in fetchGFBody body $ fetchGFInfo info defGF
 
 
-updateTOFs :: PG.Connection -> [TrueOrFalse] -> IO ()
-updateTOFs conn tofs = do
+updateTOF :: PG.Connection -> TrueOrFalse -> IO ()
+updateTOF conn tof = do
   PG.execute conn [sql|
                    INSERT INTO table_true_or_false(
                        key_body, key_answer, key_rationale, key_difficulty,
@@ -292,11 +293,11 @@ updateTOFs conn tofs = do
                        key_topics, key_words)
                    VALUES (?)
                    |]
-    tofs
+    (Only tof)
   return ()
 
-updateGFs :: PG.Connection -> [GapFilling] -> IO ()
-updateGFs conn gfs = do
+updateGF :: PG.Connection -> GapFilling -> IO ()
+updateGF conn gf = do
   PG.execute conn [sql|
                       INSERT INTO table_gap_filling(
                           key_body, key_answer, key_difficulty, key_references,
@@ -304,32 +305,38 @@ updateGFs conn gfs = do
                           key_topics, key_words)
                       VALUES (?)
                       |]
-    gfs
+    (Only gf)
   return ()
 
 
 
 data MultipleChoiceContext
-  = MCCQuestHead String Int
-  | MCCQuestRest String
+  = MCCQuestBody String
+  | MCCQuestHead String
   | MCCQuestItem Int String
   | MCCNull
+  deriving (Show,Eq)
+
+
+parserMCQuestBody :: Stream s m Char => ParsecT s u m (Int,String)
+parserMCQuestBody = do
+  skipMany $ noneOf ['A'..'Z']
+  ans <- (\x -> x - ord 'A') . ord <$> oneOf ['A'..'Z']
+  str <- many anyChar
+  return (ans, reverse str)
 
 parserMCQuestHead :: Stream s m Char => ParsecT s u m MultipleChoiceContext
 parserMCQuestHead = do
+  spaces
   string "Question"
   spaces
-  _ <- many1 digit
+  many digit
   spaces
   char ':'
-  str <- many1 (noneOf "?")
-  char '?'
-  spaces
-  ans <- (\x -> x - ord 'A') . ord <$> oneOf ['A'..'Z']
-  return $ MCCQuestHead str ans
-  
+  MCCQuestHead <$> many1 anyChar
+
 parserMCQuestRest :: Stream s m Char => ParsecT s u m MultipleChoiceContext
-parserMCQuestRest = MCCQuestRest <$> many1 anyChar
+parserMCQuestRest = MCCQuestBody <$> many1 anyChar
 
 parserMCQuestItem :: Stream s m Char => ParsecT s u m MultipleChoiceContext
 parserMCQuestItem = do
@@ -339,8 +346,13 @@ parserMCQuestItem = do
   str <- many1 anyChar
   return $ MCCQuestItem item str
   
-parserMC :: Stream s m Char => ParsecT s u m MultipleChoiceContext
+parserMC :: Stream s m Char => ParsecT s uP m MultipleChoiceContext
 parserMC = try parserMCQuestHead <|> try parserMCQuestItem <|> parserMCQuestRest
+
+parseMCBody :: [(Int,String)] -> String -> MultipleChoiceProb
+parseMCBody c b =
+  let (Right (ans,body)) = parse parserMCQuestBody "function parseMCBody" $ replace160 $ reverse b
+  in MultipleChoiceProb body ans c
 
 parseMCfBlock :: Block -> MultipleChoiceContext
 parseMCfBlock (Para il) =
@@ -357,25 +369,39 @@ data MultipleChoiceProb = MultipleChoiceProb
                         }
                         deriving (Show,Eq)
 
-toMCPfMCC :: [MultipleChoiceContext] -> [MultipleChoiceProb] -> [MultipleChoiceProb]
-toMCPfMCC [] it = it
-toMCPfMCC (MCCQuestHead b a:mccs) mcps =
-  toMCPfMCC mccs $ MultipleChoiceProb b a [] : mcps
-toMCPfMCC (MCCQuestRest b:mccs) (MultipleChoiceProb b' a cs:mcps) =
-  toMCPfMCC mccs $ MultipleChoiceProb (b++" "++b') a cs:mcps
-toMCPfMCC (MCCQuestItem i c:mccs) (MultipleChoiceProb b a cs:mcps) =
-  toMCPfMCC mccs $ MultipleChoiceProb b a ((i,c):cs):mcps
-toMCPfMCC (_:mccs) mcps = toMCPfMCC mccs mcps
+data MCCInter = MCCInterNull
+              | MCCInterItem String [(Int,String)]
+              deriving (Show,Eq)
+
+toMCPfMCCStep :: MCCInter -> [MultipleChoiceContext] -> [MultipleChoiceProb]
+toMCPfMCCStep MCCInterNull [] = []
+toMCPfMCCStep (MCCInterItem b c) [] = [parseMCBody c b]
+toMCPfMCCStep a (MCCNull:mccs) = toMCPfMCCStep a mccs
+toMCPfMCCStep MCCInterNull (MCCQuestHead b:mccs) = toMCPfMCCStep (MCCInterItem b [])  mccs
+toMCPfMCCStep MCCInterNull (MCCQuestBody b:mccs) = toMCPfMCCStep (MCCInterItem b [])  mccs
+toMCPfMCCStep (MCCInterItem b cs'') (MCCQuestBody cb:mccs) =
+  if null cs''
+  then toMCPfMCCStep (MCCInterItem (b++cb) cs'') mccs
+  else
+    let ((i,c):cs) = cs''
+        c' = (i,c++cb)
+        cs' = c':cs
+    in toMCPfMCCStep (MCCInterItem b cs') mccs
+toMCPfMCCStep (MCCInterItem b cs) (MCCQuestHead b':mccs) = parseMCBody cs b:toMCPfMCCStep (MCCInterItem b' []) mccs
+toMCPfMCCStep (MCCInterItem b cs) (MCCQuestItem i c:mccs) = toMCPfMCCStep (MCCInterItem b ((i,c):cs)) mccs
+toMCPfMCCStep _ (_:mccs) = toMCPfMCCStep MCCInterNull mccs
+toMCPfMCC :: [MultipleChoiceContext] -> [MultipleChoiceProb]
+toMCPfMCC = toMCPfMCCStep MCCInterNull
 
 toMCfMCP :: MultipleChoiceProb -> MultipleChoice
 toMCfMCP (MultipleChoiceProb b a cs) = MultipleChoice b a $ map snd $ sort cs
 
-updateMC :: PG.Connection -> [MultipleChoice] -> IO ()
-updateMC conn mcs = do
+updateMC :: PG.Connection -> MultipleChoice -> IO ()
+updateMC conn mc = do
   PG.execute conn [sql|
                       INSERT INTO table_multiple_choice(
                         key_body, key_answer, key_choices)
                       VALUES (?)
                       |]
-    mcs
+    (Only mc)
   return ()
