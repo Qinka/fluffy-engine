@@ -15,12 +15,16 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
+data-dir:            data
+data-files:          prelude.js
+
 executable fluffy
   main-is:             Main.hs
-  -- other-modules:       
+  other-modules:       Paths_fluffy
   -- other-extensions:    
   build-depends:       base >= 4  && < 5
                      , yesod-core
+                     , yesod-static
                      , text
                      , bytestring >= 0.10
                      , MonadRandom

@@ -28,11 +28,14 @@ import           System.Environment
 import           Yesod.Core
 import           Yesod.Core.Json
 import           Yesod.Core.Content
+import           Paths_fluffy
+import           Yesod.Static
 
 
 -- Site
 data Fluffy = Fluffy
               { fluffyConnectionPool :: Pool Connection
+              , fluffyStatic         :: Static
               }
 
 -- True or False
@@ -111,11 +114,27 @@ mkYesod "Fluffy" [parseRoutes|
 /true-or-false/#Int          TrueOrFalseR       GET
 /gap-filling/#Int            GapFillingR        GET
 /multiple-choice/#Int        MultipleChoiceR    GET
+/static                      StaticR            Static fluffyStatic
 /.clean-history              CleanHistory       GET
 |]
 
-instance Yesod Fluffy
-
+instance Yesod Fluffy where
+  defaultLayout widget = do
+    pc <- widgetToPageContent widget
+    withUrlRenderer
+      [hamlet|
+              $doctype 5
+              <html>
+                <head>
+                  <title> #{pageTitle pc}
+                  <meta charset=utf-8>
+                  <meta name=viewport content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+                  <script src=/static/prelude.js>
+                  ^{pageHead pc}
+                <body>
+                  <div id=fluffybody>
+                    ^{pageBody pc}
+              |]
 
 -- home page
 getHomeR :: Handler Html
@@ -123,6 +142,7 @@ getHomeR = do
   goal  <- fromMaybe 0 . fmap (read . T.unpack) <$> lookupSession "goal"
   total <- fromMaybe 0 . fmap (read . T.unpack) <$> lookupSession "total"
   defaultLayout $ do
+    setTitle "Fluffy Engine"
     pageAbove Nothing Nothing goal total
     [whamlet|
             <div class=fehead>
@@ -170,6 +190,7 @@ getTrueOrFalseR i = do
   setSession "goal" $ T.pack $ show $ goal
   setSession "total" $ T.pack $ show $ total
   defaultLayout $ do
+    setTitle $ toHtml $ T.pack $ "True or False: " ++ show i
     pageAbove (Just last) (Just next) goal total
     [whamlet|
             <div class=tofhead>
@@ -265,6 +286,7 @@ getGapFillingR i = do
   setSession "goal" $ T.pack $ show $ goal
   setSession "total" $ T.pack $ show $ total
   defaultLayout $ do
+    setTitle $ toHtml $ T.pack $ "Gap Filling: " ++ show i
     pageAbove (Just last) (Just next) goal total
     [whamlet|
             <div class=gfhead>
@@ -354,6 +376,7 @@ getMultipleChoiceR i =  do
   let last = if i > 0 then MultipleChoiceR (i-1) else HomeR
       next = MultipleChoiceR (i+1)
   defaultLayout $ do
+    setTitle $ toHtml $ T.pack $ "Multiple Choice: " ++ show i
     pageAbove (Just last) (Just next) goal total
     [whamlet|
             <div class=mchead>
@@ -404,7 +427,8 @@ main = do
     100
     1000
     200
-  warp port $ Fluffy pgPool
+  s <- getDataDir >>= static
+  warp port $ Fluffy pgPool s
 
 
 pageAbove :: (a ~ Route Fluffy, b ~ Route Fluffy)
