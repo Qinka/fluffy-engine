@@ -16,8 +16,7 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 data-dir:            data
-data-files:          *.js
-                     *.css
+data-files:          prelude.js
 
 executable fluffy
   main-is:             Main.hs

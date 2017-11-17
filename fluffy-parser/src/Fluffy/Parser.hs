@@ -164,12 +164,14 @@ fetchGFBody (Para il) gf =
     Right (_,b) -> gf {gfBody = b}
     Left  _ -> gf
 
+
+
 parserTOFSet' :: Stream s m Char => ParsecT s u m ([String] -> TrueOrFalse -> TrueOrFalse)
 parserTOFSet' = do
   skipMany (char '\160' <|> space)
   key <- many (noneOf ":")
   return $ case key of
-    "answer"              -> \str tof -> tof {tofAnswer = read (head str)}
+    "answer"              -> \str tof -> tof {tofAnswer = "True" ==  (take 4 $ filter isLetter $ head str)}
     "rationale"           -> \str tof -> tof {tofRationale = Just (head str)}
     "difficulty"          -> \str tof -> tof {tofDifficulty = Just (head str)}
     "references"          -> \str tof -> tof {tofReference = parseReference (head str)}
@@ -204,10 +206,13 @@ parserGFSet' = do
     "keywords"            -> \str gf -> gf {gfKeyWords = str}
     _                     -> \_   gf -> gf
 
+fromPlain (Plain x) = x
+fromPlain (Para x) = x
+
 parseGFSet :: [[Block]] -> (GapFilling -> GapFilling)
 parseGFSet bs =
-  let (Plain key'  ) = head $ bs !! 0
-      (Plain value') = head $ bs !! 1
+  let key'   = fromPlain $ head $ bs !! 0
+      value' = fromPlain $ head $ bs !! 1
       key   = map toLower $ renderText key'
       value = renderText value'
       rt = parse parserGFSet' "function parseTOFSet" $ replace160 key
