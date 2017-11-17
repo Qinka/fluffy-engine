@@ -149,11 +149,11 @@ getHomeR = do
               <h1> Fluffy Engine
               <p> Hi
             <div class=tofl>
-              <a href=@{TrueOrFalseR 0}> Go to True or False
+              <a href=@{TrueOrFalseR 1}> Go to True or False
             <div class=gfl>
-              <a href=@{GapFillingR 0}> Go to Gap Filling
+              <a href=@{GapFillingR 1}> Go to Gap Filling
             <div class=mcl>
-              <a href=@{MultipleChoiceR 0}> Go to Multiple Choice
+              <a href=@{MultipleChoiceR 1}> Go to Multiple Choice
            |]
 
 data TOFRes = TOFProb
