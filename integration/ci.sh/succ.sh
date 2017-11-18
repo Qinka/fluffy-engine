@@ -27,7 +27,7 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
     export LATEST=latest
     export FLUFFY=fluffy
     echo copy files
-    sudo cp -r $HOME/.local/  docker.tmp/root
+    sudo cp -r $HOME/.local/*  docker.tmp/root
     sudo cp $TRAVIS_BUILD_DIR/integration/dockerfiles/fluffy.dockerfile   docker.tmp
     cd docker.tmp
     docker build -t qinka/fluffy:$FLUFFY-$GIT_TAG   -f fluffy.dockerfile              . || true
