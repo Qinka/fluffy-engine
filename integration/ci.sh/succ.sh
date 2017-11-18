@@ -19,7 +19,7 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
     echo
     echo create folder
     cd $TRAVIS_BUILD_DIR
-    mkdir -p docker.tmp/bin
+    mkdir -p docker.tmp/root
     echo build fluffy  image
     cd $TRAVIS_BUILD_DIR
     stack install fluffy --ghc-options -O2 --ghc-options -threaded
@@ -27,7 +27,7 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
     export LATEST=latest
     export FLUFFY=fluffy
     echo copy files
-    sudo cp $HOME/.local/bin/fluffy  docker.tmp/bin
+    sudo cp -r $HOME/.local/  docker.tmp/root
     sudo cp $TRAVIS_BUILD_DIR/integration/dockerfiles/fluffy.dockerfile   docker.tmp
     cd docker.tmp
     docker build -t qinka/fluffy:$FLUFFY-$GIT_TAG   -f fluffy.dockerfile              . || true
