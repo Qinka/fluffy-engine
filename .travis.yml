@@ -14,7 +14,7 @@ matrix:
             - hvr-ghc
           packages:
             - ghc-8.2.1
-            - redis-server
+            - cabal-install-2.0
             - wget
             - curl
 

@@ -27,9 +27,13 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         cd $TRAVIS_BUILD_DIR
         echo build fluffy
         cd fluffy
+        echo cabal update
         cabal update
+        echo configure
         cabal configure --prefix='/usr' --datasubdir='fluffy' --enable-optimization=2 --ghc-options="-thread"
+        echo build
         cabal build
+        echo copy
         cabal copy --destdir=$TRAVIS_BUILD_DIR/docker.tmp/root
         cd $TRAVIS_BUILD_DIR
 
