@@ -27,7 +27,7 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         cd $TRAVIS_BUILD_DIR
         echo build fluffy
         cd fluffy
-        cabal configure --prefix='/usr' --datasubdir='fluffy' --enable-optimization=3 --ghc-options="-thread"
+        cabal configure --prefix='/usr' --datasubdir='fluffy' --enable-optimization=2 --ghc-options="-thread"
         cabal build
         cabal copy --destdir=$TRAVIS_BUILD_DIR/docker.tmp/root
         cd $TRAVIS_BUILD_DIR
@@ -37,7 +37,7 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         export FLUFFY=fluffy
         echo copy files
         sudo cp $TRAVIS_BUILD_DIR/integration/dockerfiles/fluffy.dockerfile   docker.tmp
-        
+
         cd docker.tmp
         docker build -t qinka/fluffy:$FLUFFY-$GIT_TAG   -f fluffy.dockerfile          . || true
         docker tag      qinka/fluffy:$FLUFFY-$GIT_TAG   qinka/fluffy:$FLUFFY-$LATEST    || true
