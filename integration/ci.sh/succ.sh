@@ -32,12 +32,11 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         #echo install dependencies
         #cabal install --only-dependencies
         echo configure
-        export 
         cabal configure --prefix='/usr' --datasubdir='fluffy' \
           --package-db=clear --package-db=`stack path --local-pkg-db` \
           --package-db=`stack path --global-pkg-db`  \
           --package-db=`stack path --snapshot-pkg-db` \
-          --enable-optimization=2 --ghc-options="-thread"
+          --enable-optimization=2 --ghc-options="-threaded"
         echo build
         cabal build
         echo copy
