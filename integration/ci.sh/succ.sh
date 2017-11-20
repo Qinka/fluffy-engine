@@ -13,7 +13,7 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
 
     echo clean stack build
     stack clean
-    stack install cabal-install
+    stack install cabal-install alex happy
 
     if [ -n "$IS_DOCKER" ]; then
         echo build docker image
@@ -29,12 +29,15 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         cd fluffy
         echo cabal update
         cabal update
-        echo install alex happy
-        cabal install alex happy
-        echo install dependencies
-        cabal install --only-dependencies
+        #echo install dependencies
+        #cabal install --only-dependencies
         echo configure
-        cabal configure --prefix='/usr' --datasubdir='fluffy' --enable-optimization=2 --ghc-options="-thread" -v
+        export 
+        cabal configure --prefix='/usr' --datasubdir='fluffy' \
+          --package-db=clear --package-db=`stack path --local-pkg-db` \
+          --package-db=`stack path --global-pkg-db`  \
+          --package-db=`stack path --snapshot-pkg-db` \
+          --enable-optimization=2 --ghc-options="-thread"
         echo build
         cabal build
         echo copy
