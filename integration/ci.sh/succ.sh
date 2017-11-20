@@ -28,18 +28,18 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         echo build fluffy
         cd fluffy
         echo cabal update
-        cabal update
+        cabal update -v
         cabal update
         cabal update
         sudo cabal update || true
         sudo cabal update || true
         sudo cabal update || true
         echo configure
-        cabal configure --prefix='/usr' --datasubdir='fluffy' --enable-optimization=2 --ghc-options="-thread"
+        cabal configure --prefix='/usr' --datasubdir='fluffy' --enable-optimization=2 --ghc-options="-thread" -v
         echo build
-        cabal build
+        cabal build -v
         echo copy
-        cabal copy --destdir=$TRAVIS_BUILD_DIR/docker.tmp/root
+        cabal copy --destdir=$TRAVIS_BUILD_DIR/docker.tmp/root -v
         cd $TRAVIS_BUILD_DIR
 
         export GIT_TAG=`echo $GIT_TAG | sed 's/\//-/g'`
