@@ -29,6 +29,7 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         cd fluffy
         echo cabal update
         cabal update -v
+        cabal install --only-dependencies
         cabal list
         cabal update
         cabal update
