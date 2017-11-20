@@ -29,6 +29,11 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         cd fluffy
         echo cabal update
         cabal update
+        cabal update
+        cabal update
+        sudo cabal update || true
+        sudo cabal update || true
+        sudo cabal update || true
         echo configure
         cabal configure --prefix='/usr' --datasubdir='fluffy' --enable-optimization=2 --ghc-options="-thread"
         echo build
