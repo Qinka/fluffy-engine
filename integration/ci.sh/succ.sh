@@ -28,18 +28,15 @@ if [ x"$TRAVIS_PULL_REQUEST" == "xfalse" ]; then
         echo build fluffy
         cd fluffy
         echo cabal update
-        cabal update -v
+        cabal update
+        echo install alex happy
+        cabal install alex happy
+        echo install dependencies
         cabal install --only-dependencies
-        cabal list
-        cabal update
-        cabal update
-        sudo cabal update || true
-        sudo cabal update || true
-        sudo cabal update || true
         echo configure
         cabal configure --prefix='/usr' --datasubdir='fluffy' --enable-optimization=2 --ghc-options="-thread" -v
         echo build
-        cabal build -v
+        cabal build
         echo copy
         cabal copy --destdir=$TRAVIS_BUILD_DIR/docker.tmp/root -v
         cd $TRAVIS_BUILD_DIR
