@@ -100,7 +100,7 @@ docker exec $FLUFFY_PREFIX-haskell chmod a+x /update.hs
 docker cp $FLUFFY_SPM_PATH  $FLUFFY_PREFIX-haskell:/
 docker exec $FLUFFY_PREFIX-haskell git clone https://github.com/Qinka/fluffy-engine.git
 docker exec $FLUFFY_PREFIX-haskell apt update
-docker exec $FLUFFY_PREFIX-haskell apt install -y libpq5
+docker exec $FLUFFY_PREFIX-haskell apt install -y libpq5 libpg-dev
 docker exec $FLUFFY_PREFIX-haskell cabal update
 docker exec $FLUFFY_PREFIX-haskell cabal install --only-dependencies fluffy-engine/fluffy-parser
 docker exec $FLUFFY_PREFIX-haskell cabal install postgresql-simple pandoc bytestring monad-logger fast-logger text
