@@ -11,7 +11,10 @@ A fluffy engine for XDU 2017 fall SS SPM final exam.
 
 ### Get Quick Start
 
-TODO (with simple-run.sh <- TODO)
+You can run the following command to deploy it directly:
+```bash
+curl -sSL http://raw.githubusercontent.com/Qinka/fluffy-engine/master/scripts/simple-run.sh | sh
+```
 
 ### Run
 
@@ -50,7 +53,7 @@ The detail can be found on [Docker Hub - postgres](https://hub.docker.com/_/post
 
 Create and run the Fluffy image: `qinka/fluffy:fluffy-latest`:
 ```bash
-docker run -d -name fluffy-be --link fluffy-db:db -p 3000:3000 fluffy -c "fluffy 3000 host=db port=5432 user=postgres password=fluffypassword"
+docker run -d --name fluffy-be --link fluffy-db:db -p 3000:3000 fluffy -c "fluffy 3000 host=db port=5432 user=postgres password=fluffypassword"
 ```
 
 Then you can visit host-of-docker:3000, and the home page will be shown.
@@ -61,31 +64,62 @@ To update the data to database with [script](scripts/update.hs), you also need
 a container with haskell's image.
 So you can run:
 ```bash
-docker run -d --name fluffy-haskell --link fluffy-db:db
+docker run -d --name fluffy-haskell --link fluffy-db:db haskell:latest
 ```
 
 #### Third step is import the data into database with script.
 
+
 You need firstly initialize the sql table to PostgreSQL database.
-Run :
+Copy the sql file to `postgres` image:
 ```bash
-docker exec -it fluffy-db /bin/bash
+wget https://raw.githubusercontent.com/Qinka/fluffy-engine/master/database/fluffy.sql 
+docker cp fluffy.sql fluffy-db:/fluffy.sql
+rm fluffy.sql
 ```
-and then you will connect with container which host database.
-After connected with that database, run the `psql` to connect with the database
-and initialize it with [sql script](database/fluffy.sql):
+After sql file copied, run the `psql` to initialize database with [sql script](database/fluffy.sql):
 ```bash
-TODO
+docker exec fluffy-db psql -d postgres -U postgres -f /init.sql
+```
+
+Till now, the database is initialized. Next thing to do is import the data into database
+with the [script](scripts/update.hs).
+Copy the script into database:
+```bash
+curl -sSL https://raw.githubusercontent.com/Qinka/fluffy-engine/master/scripts/update.sh | docker cp - fluffy-haskell:/update.hs
+docker exec fluffy-haskell chmod a+x /update.hs
+```
+Copy the SPM's question bank into container `fluffy-haskell`:
+```bash
+docker cp /path/of/spm/s/question/bank fluffy-haskell:/
+```
+Than  run the script:
+```bash
+docker exec fluffy-haskell /update.hs / host=db port=5432 user=postgres password=fluffypassword
 ```
 
 #### Final
 
-TODO
+Then you can visit the site to check the data.
 
-### Custom with Docker file
+### Customization
 
-TODO
+The fluffy has a way to customize: there is a javascript file, named `prelude.js`, which will be loaded. You can change this javascript file to customize this site.
+The all the static file can be placed or added into the data directory of fluffy(in docker image is `/usr/share/fluffy`).
+So when customizing fluffy, you can add the files into data directory of fluffy and those file can be found under route `/static`.
 
-### Custom via add file to container
+#### With Dockerfile
 
-TODO
+You can add the file you want to add into fluffy via creating a new docker with dockerfile, for example:
+```Dockerfile
+FROM qinka/fluffy:fluffy-latest
+MAINTAINER Johann Lee <me@qinka.pro>
+ADD /your/host/files /usr/share/fluffy
+```
+
+#### With `docker cp`
+
+You can also copy the files by commoand:
+```
+docker cp /path/to/your/files fluffy:/usr/share/fluffy
+```
