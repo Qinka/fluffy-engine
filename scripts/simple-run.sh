@@ -77,7 +77,7 @@ echo create images
 echo
 
 
-docker run -d --name $FLUFFY_PREFIX-db -e POSTGRES_PASSWORD=$FLUFFY_DB_PASSWORD postgres:latest && echo create postgres container
+docker run -d --name $FLUFFY_PREFIX-db -e POSTGRES_PASSWORD=$FLUFFY_DB_PASSWORD $FLUFFY_DB_PORT_EF postgres:latest && echo create postgres container
 docker run -d --name $FLUFFY_PREFIX-be --link $FLUFFY_PREFIX-db:db -p $FLUFFY_PORT:$FLUFFY_PORT qinka/fluffy:fluffy-latest \
        -c "fluffy $FLUFFY_PORT host=db port=5432 user=postgres password=$FLUFFY_DB_PASSWORD" && echo create fluffy container
 docker run -d -i --name $FLUFFY_PREFIX-haskell  --link fluffy-db:db  haskell:latest /bin/bash && echo create haskell container 
@@ -97,7 +97,10 @@ wget https://raw.githubusercontent.com/Qinka/fluffy-engine/master/scripts/update
 docker cp update.hs $FLUFFY_PREFIX-haskell:/
 rm update.hs
 docker exec $FLUFFY_PREFIX-haskell chmod a+x /update.hs
-docker cp $FLUFFY_SPM_PATH  $FLUFFY_PREFIX-haskell:/
+docker cp $FLUFFY_SPM_PATH/Fillintheblanks $FLUFFY_PREFIX-haskell:/
+docker cp $FLUFFY_SPM_PATH/MultipleChoice  $FLUFFY_PREFIX-haskell:/
+docker cp $FLUFFY_SPM_PATH/TrueFalse       $FLUFFY_PREFIX-haskell:/
+docker cp $FLUFFY_SPM_PATH/WritingPart     $FLUFFY_PREFIX-haskell:/
 docker exec $FLUFFY_PREFIX-haskell git clone https://github.com/Qinka/fluffy-engine.git
 docker exec $FLUFFY_PREFIX-haskell apt update
 docker exec $FLUFFY_PREFIX-haskell apt install -y libpq5 libpg-dev
