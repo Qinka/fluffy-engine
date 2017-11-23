@@ -119,6 +119,7 @@ mkYesod "Fluffy" [parseRoutes|
 |]
 
 instance Yesod Fluffy where
+  makeSessionBackend site = pure <$> defaultClientSessionBackend (7 * 24 * 60)  "client_session_key.aes"
   defaultLayout widget = do
     pc <- widgetToPageContent widget
     withUrlRenderer
