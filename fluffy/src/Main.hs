@@ -277,7 +277,7 @@ getGapFillingR i = do
     case answer of
       Just x' -> do
         let x = T.reverse . T.dropWhile (==' ') . T.reverse $ T.dropWhile (== ' ') x'
-            rt = x == gfAnswer
+            rt = x `elem` T.lines gfAnswer
             goal  = goal'  + (if rt then 1 else 0)
             total = total' + 1
         return (goal, total,GFForm rt)
