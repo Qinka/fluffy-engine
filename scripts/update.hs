@@ -35,7 +35,7 @@ readUpdateMC :: MonadIO m => Connection -> FilePath -> m ()
 readUpdateMC c fp = do
   Right (Pandoc _ bs) <- liftIO $ loadFileWithDocx fp
   let mccs = map parseMCfBlock bs
-      mcps = toMCPfMCC mccs
+      mcps = toMCPfMCC $ concat mccs
       mcs  = map toMCfMCP mcps
   mapM_ (liftIO.updateMC c) mcs
 

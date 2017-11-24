@@ -330,7 +330,7 @@ parserMCQuestBody = do
   str <- many anyChar
   return (ans, reverse str)
 
-parserMCQuestHead :: Stream s m Char => ParsecT s u m MultipleChoiceContext
+parserMCQuestHead :: Stream s m Char => ParsecT s u m [MultipleChoiceContext]
 parserMCQuestHead = do
   spaces
   string "Question"
@@ -338,34 +338,42 @@ parserMCQuestHead = do
   many digit
   spaces
   char ':'
-  MCCQuestHead <$> many1 anyChar
+  pure . MCCQuestHead <$> many1 anyChar
 
-parserMCQuestRest :: Stream s m Char => ParsecT s u m MultipleChoiceContext
-parserMCQuestRest = MCCQuestBody <$> many1 anyChar
+parserMCQuestRest :: Stream s m Char => ParsecT s u m [MultipleChoiceContext]
+parserMCQuestRest = pure . MCCQuestBody <$> many1 anyChar
 
-parserMCQuestItem :: Stream s m Char => ParsecT s u m MultipleChoiceContext
-parserMCQuestItem = do
-  item <- (\x -> x - ord 'A') . ord <$> oneOf ['A'..'Z']
-  char ':'
-  spaces
-  str <- many1 anyChar
-  return $ MCCQuestItem item str
+parserMCQuestItem :: Stream s m Char => ParsecT s u m [MultipleChoiceContext]
+parserMCQuestItem = step []
+  where step xs = do
+          item <- (\x -> x - ord 'A') . ord <$> oneOf ['A'..'Z']
+          char ':'
+          spaces
+          str <- many $ noneOf ['A'..'Z']
+          let xs' = MCCQuestItem item str:xs
+          try (end xs') <|> try (step xs') <|> (more xs item str)
+        more xs item str = do
+          str' <- many (oneOf $ ':':['A'..'Z'])
+          str'' <- many $ noneOf ['A'..'Z']
+          let xs' = MCCQuestItem item (str++str'++str''):xs
+          try (end xs') <|> try (step xs') <|> (more xs item (str++str'++str''))
+        end xs = eof >> return xs
   
-parserMC :: Stream s m Char => ParsecT s uP m MultipleChoiceContext
-parserMC = try parserMCQuestHead <|> try parserMCQuestItem <|> parserMCQuestRest
+parserMC :: Stream s m Char => ParsecT s uP m [MultipleChoiceContext]
+parserMC = try parserMCQuestHead <|>  try parserMCQuestItem <|> parserMCQuestRest
 
 parseMCBody :: [(Int,String)] -> String -> MultipleChoiceProb
 parseMCBody c b =
   let (Right (ans,body)) = parse parserMCQuestBody "function parseMCBody" $ replace160 $ reverse b
   in MultipleChoiceProb body ans c
 
-parseMCfBlock :: Block -> MultipleChoiceContext
+parseMCfBlock :: Block -> [MultipleChoiceContext]
 parseMCfBlock (Para il) =
   let body = renderText il
       rt   = parse parserMC "function parseMCBlock" $ replace160 body
   in case rt of
     Right i -> i
-    Left _ -> MCCNull
+    Left e -> error $ show e-- [MCCNull]
     
 data MultipleChoiceProb = MultipleChoiceProb
                         { mcbBody :: String
