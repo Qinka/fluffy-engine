@@ -302,7 +302,7 @@ getGapFillingR i = do
                 <div class=gfform>
                   <form>
                     <div class=gfinput>
-                      <input type=text name=answer>
+                      <input type=text name=answer  autocomplete=off>
                     <div class=gfcheck>
                       <input type=submit value=Check>
                 |]
