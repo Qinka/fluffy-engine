@@ -7,6 +7,15 @@ A fluffy engine for XDU 2017 fall SS SPM final exam.
 [![ImageLayers Layers](https://img.shields.io/imagelayers/layers/qinka/fluffy/fluffy-latest.svg)](https://hub.docker.com/r/qinka/fluffy/)
 [![ImageLayers Size](https://img.shields.io/imagelayers/image-size/qinka/fluffy/fluffy-latest.svg)](https://hub.docker.com/r/qinka/fluffy/)
 
+## Install
+
+For cabal:
+```bash
+cabal update
+cabal install fluffy
+cabal install fluffy-parser
+```
+
 ## Usage
 
 ### Get Quick Start
