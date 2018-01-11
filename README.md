@@ -6,6 +6,8 @@ A fluffy engine for XDU 2017 fall SS SPM final exam.
 [![Docker image](https://img.shields.io/badge/docker-image-orange.svg)](https://hub.docker.com/r/qinka/fluffy/)
 [![ImageLayers Layers](https://img.shields.io/imagelayers/layers/qinka/fluffy/fluffy-latest.svg)](https://hub.docker.com/r/qinka/fluffy/)
 [![ImageLayers Size](https://img.shields.io/imagelayers/image-size/qinka/fluffy/fluffy-latest.svg)](https://hub.docker.com/r/qinka/fluffy/)
+[![Hackage](https://img.shields.io/hackage/v/fluffy.svg)](https://hackage.haskell.org/package/fluffy)
+[![Hackage](https://img.shields.io/hackage/v/fluffy-parser.svg)](https://hackage.haskell.org/package/fluffy-parser)
 
 ## Install
 
