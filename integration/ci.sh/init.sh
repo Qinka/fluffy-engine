@@ -11,7 +11,7 @@ export OS_DISTRIBUTOR=$(lsb_release -a | grep Description | awk '{print $2}')
 echo using $OS_DISTRIBUTOR  $OS_CORENAME
 
 echo Docker Hub login
-docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 
 echo install haskell-stack
 mkdir -p ~/.local/bin
